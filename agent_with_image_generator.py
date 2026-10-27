@@ -1,18 +1,38 @@
+import atexit
 import base64
 import os
 import datetime
-import pytz
 import requests
 from dotenv import load_dotenv
-from smolagents import CodeAgent, OpenAIModel, tool, DuckDuckGoSearchTool
 
 load_dotenv()
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY")
+LANGFUSE_BASE_URL = os.environ.get("LANGFUSE_BASE_URL")
 
 if not OPENROUTER_API_KEY or not OPENAI_API_KEY:
     raise ValueError("Missing API keys! Ensure both OPENROUTER_API_KEY and OPENAI_API_KEY are in your .env file.")
+
+if not LANGFUSE_PUBLIC_KEY or not LANGFUSE_SECRET_KEY or not LANGFUSE_BASE_URL:
+    raise ValueError(
+        "Missing Langfuse settings! Set LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, "
+        "and LANGFUSE_BASE_URL in your .env file."
+    )
+
+from langfuse import get_client
+from openinference.instrumentation.smolagents import SmolagentsInstrumentor
+
+langfuse = get_client()
+if not langfuse.auth_check():
+    raise RuntimeError("Langfuse authentication failed. Check your keys and LANGFUSE_BASE_URL.")
+
+SmolagentsInstrumentor().instrument()
+atexit.register(langfuse.flush)
+
+from smolagents import CodeAgent, OpenAIModel, tool, DuckDuckGoSearchTool
 
 # 1. Configure smolagents text brain to route through OpenRouter (Llama 3.3)
 model = OpenAIModel(

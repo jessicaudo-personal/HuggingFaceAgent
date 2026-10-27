@@ -34,7 +34,8 @@ The language model and image-generation API are separate services, so this examp
 Use Python 3 and install the packages used by the examples:
 
 ```bash
-python -m pip install openai python-dotenv smolagents requests pytz duckduckgo-search
+python -m pip install openai python-dotenv "smolagents[telemetry]" requests duckduckgo-search
+python -m pip install langfuse opentelemetry-sdk opentelemetry-exporter-otlp openinference-instrumentation-smolagents
 ```
 
 Create a `.env` file in the project directory with the credentials needed by the scripts:
@@ -42,9 +43,12 @@ Create a `.env` file in the project directory with the credentials needed by the
 ```dotenv
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENAI_API_KEY=your_openai_api_key
+LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+LANGFUSE_SECRET_KEY=your_langfuse_secret_key
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
 ```
 
-Keep `.env` private; it is excluded from version control by `.gitignore`. `agent_test.py` and `agent_with_prompt.py` only require `OPENROUTER_API_KEY`. The image-agent example requires both keys.
+Use the Langfuse host for your account's region if it differs from the example. Keep `.env` private; it is excluded from version control by `.gitignore`. `agent_test.py` and `agent_with_prompt.py` only require `OPENROUTER_API_KEY`. The image-agent and Langfuse examples require the Langfuse keys; image generation also requires `OPENAI_API_KEY`.
 
 Run an example from the project directory:
 
@@ -52,7 +56,14 @@ Run an example from the project directory:
 python agent_test.py
 python agent_with_prompt.py
 python agent_with_image_generator.py
+python langfuse_observe.py
 ```
+
+## Observability with Langfuse
+
+The smolagents app initializes the Langfuse client, checks its credentials, and enables `SmolagentsInstrumentor` before creating the agent. Its runs are sent to the configured Langfuse project; pending traces are flushed when the script exits.
+
+Run `langfuse_observe.py` for a small smoke test using the same OpenRouter model configuration. After it finishes, open the configured Langfuse project and check its traces. Both scripts load settings from `.env`; they do not use `InferenceClientModel` or require a Hugging Face token.
 
 ## Notes
 
